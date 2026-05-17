@@ -1,0 +1,52 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Build and generated files
+*.o
+*.a
+*.so
+*.class
+*.jar
+*.exe
+*.dll
+*.pdb
+
+# NuGet
+.nuget/
+packages/
+*.nupkg
+*.snupkg
+
+# Rider
+.rider/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+appsettings.Development.json
+.env
+.env.local
+.env.*.local
+
+# Misc
+*.log
+.DS_Store
