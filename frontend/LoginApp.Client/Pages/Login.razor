@@ -1,0 +1,116 @@
+@page "/"
+@page "/login"
+@inject IAuthService authService
+@inject NavigationManager navigationManager
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="auth-title">Login</h1>
+        <p class="auth-subtitle">Masukkan username dan password Anda</p>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message">
+                @errorMessage
+            </div>
+        }
+
+        <form @onsubmit="HandleLogin">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="form-control" @bind-value="username" placeholder="Masukkan username" disabled="@isLoading" required />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" @bind-value="password" placeholder="Masukkan password" disabled="@isLoading" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="loading-spinner"></span>
+                    <span>Loading...</span>
+                }
+                else
+                {
+                    <span>Login</span>
+                }
+            </button>
+        </form>
+
+        <div class="form-actions-secondary">
+            Belum punya akun?
+            <button type="button" class="btn-link-text" @onclick="GoToRegister">
+                Daftar di sini
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string errorMessage = "";
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (authService.IsLoggedIn())
+        {
+            navigationManager.NavigateTo("/welcome", replace: true);
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            errorMessage = "Username tidak boleh kosong";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Password tidak boleh kosong";
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+
+            var loginRequest = new LoginRequest
+            {
+                Username = username,
+                Password = password
+            };
+
+            var response = await authService.LoginAsync(loginRequest);
+
+            if (response.Success)
+            {
+                navigationManager.NavigateTo("/welcome", replace: true);
+            }
+            else
+            {
+                errorMessage = response.Message ?? "Login gagal";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Terjadi kesalahan: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoToRegister()
+    {
+        navigationManager.NavigateTo("/register");
+    }
+}

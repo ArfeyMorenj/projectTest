@@ -1,0 +1,54 @@
+﻿@* 
+═══════════════════════════════════════════════════════════════════════
+APP.RAZOR - ROOT COMPONENT
+═══════════════════════════════════════════════════════════════════════
+
+Ini adalah root component yang handle semua routing di aplikasi.
+
+Setara dengan:
+- React:   <BrowserRouter><Routes>...</Routes></BrowserRouter>
+- Next.js: app/layout.tsx yang wrap semua routes
+- Vue:     <RouterView /> di App.vue
+
+Component ini:
+1. Scan semua @page directives di .razor files
+2. Route ke halaman yang sesuai
+3. Wrap semua halaman dengan MainLayout
+4. Handle 404 (halaman tidak ditemukan)
+
+Routing di Blazor WASM:
+- NOT file-based (seperti Next.js /pages)
+- NOT kebab-case routes (seperti Next.js)
+- Menggunakan @page "/route" directive di setiap .razor file
+- Contoh: @page "/login" artinya route /login
+*@
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        @* 
+        RouteView = Render component yang sesuai dengan route
+        Setara: <Route path="/login" component={Login} />
+        *@
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        
+        @* 
+        FocusOnNavigate = Auto-scroll ke top saat navigasi
+        Selector="h1" = Fokus ke elemen <h1> pertama
+        Setara: window.scrollTo(0, 0) atau useEffect(() => scroll)
+        *@
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        @* 
+        Halaman yang tampil jika route tidak ditemukan (404)
+        Setara: <Route path="*" component={NotFound} />
+        *@
+        <PageTitle>Not found</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div style="text-align: center; padding: 50px;">
+                <h1>404 - Halaman Tidak Ditemukan</h1>
+                <p>Maaf, halaman yang Anda cari tidak ada.</p>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

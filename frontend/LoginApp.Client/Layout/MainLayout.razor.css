@@ -1,0 +1,33 @@
+/*
+═══════════════════════════════════════════════════════════════════════
+MAINLAYOUT STYLES - SIMPLE & CLEAN
+═══════════════════════════════════════════════════════════════════════
+
+Layout untuk project login yang SIMPLE:
+- Full height page
+- Main content di tengah (via CSS Grid/Flexbox)
+- Mobile responsive
+*/
+
+.layout-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 0.5rem;
+    }
+}
+

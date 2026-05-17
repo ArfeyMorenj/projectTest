@@ -1,0 +1,124 @@
+@page "/lockscreen"
+@implements IAsyncDisposable
+@inject IAuthService authService
+@inject NavigationManager navigationManager
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div class="lock-icon">🔒</div>
+        </div>
+
+        <h1 class="auth-title" style="text-align: center;">Layar Terkunci</h1>
+        <p class="auth-subtitle" style="text-align: center;">@username</p>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message">
+                @errorMessage
+            </div>
+        }
+
+        <form @onsubmit="HandleUnlock">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" @bind-value="password" placeholder="Masukkan password untuk membuka" disabled="@isLoading" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="loading-spinner"></span>
+                    <span>Loading...</span>
+                }
+                else
+                {
+                    <span>Buka Kunci</span>
+                }
+            </button>
+        </form>
+
+        <button type="button" class="btn btn-secondary" @onclick="HandleSignOut" disabled="@isLoading" style="margin-top: 15px; width: 100%;">
+            Keluar / Sign Out
+        </button>
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string errorMessage = "";
+    private bool isLoading = false;
+    private System.Threading.Timer? timer = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        username = authService.GetCurrentUser() ?? "";
+
+        if (!authService.IsLoggedIn())
+        {
+            navigationManager.NavigateTo("/login", replace: true);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            timer = new System.Threading.Timer(_ => StateHasChanged(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        }
+    }
+
+    private async Task HandleUnlock()
+    {
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Password tidak boleh kosong";
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+
+            var loginRequest = new LoginRequest
+            {
+                Username = username,
+                Password = password
+            };
+
+            var response = await authService.LoginAsync(loginRequest);
+
+            if (response.Success)
+            {
+                navigationManager.NavigateTo("/welcome", replace: true);
+            }
+            else
+            {
+                errorMessage = "Password salah";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Terjadi kesalahan: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void HandleSignOut()
+    {
+        authService.Logout();
+        navigationManager.NavigateTo("/login", replace: true);
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        timer?.Dispose();
+        await Task.CompletedTask;
+    }
+}

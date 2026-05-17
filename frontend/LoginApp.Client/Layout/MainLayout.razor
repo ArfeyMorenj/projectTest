@@ -1,0 +1,41 @@
+﻿@inherits LayoutComponentBase
+
+@*
+═══════════════════════════════════════════════════════════════════════
+MAINLAYOUT.RAZOR - SHARED LAYOUT UNTUK SEMUA HALAMAN
+═══════════════════════════════════════════════════════════════════════
+
+Ini adalah layout component yang dipakai oleh semua halaman.
+Setiap halaman akan di-render di tempat @Body di bawah.
+
+Setara dengan:
+- React:   <Layout>{children}</Layout> atau Outlet
+- Next.js: app/layout.tsx yang wrap page.tsx
+- Vue:     <LayoutDefault><RouterView /></LayoutDefault>
+
+Untuk project login ini:
+- SIMPLE layout (hanya @Body)
+- Tidak perlu sidebar atau navbar kompleks
+- Setiap halaman handle navigasi sendiri
+  (misalnya: "Klik Register untuk pergi ke /register")
+
+Life Cycle:
+- Component di-render saat app start
+- Setiap kali navigasi ke route baru, halaman
+  di-render di @Body, layoutnya tetap sama
+*@
+
+<div class="layout-container">
+    <main class="main-content">
+        @* 
+        @Body = Tempat halaman (Login.razor, Register.razor, dll) di-render
+        Setiap halaman yang punya @page directive akan tampil di sini
+        *@
+        @Body
+    </main>
+</div>
+
+@code {
+    // Layout dapat punya @code block juga untuk logic
+    // (tapi untuk project ini tidak ada logic yang diperlukan)
+}

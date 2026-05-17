@@ -1,0 +1,244 @@
+@page "/welcome"
+@implements IAsyncDisposable
+@inject IAuthService authService
+@inject NavigationManager navigationManager
+
+@*
+═══════════════════════════════════════════════════════════════════════
+WELCOME.RAZOR - HALAMAN WELCOME (SETELAH LOGIN)
+═══════════════════════════════════════════════════════════════════════
+
+Ini adalah halaman yang tampil setelah user berhasil login.
+Route: "/welcome"
+
+Setara dengan:
+- React:  app/dashboard/page.tsx atau pages/dashboard
+- Next.js: pages/dashboard.tsx
+- Vue:     views/Dashboard.vue
+
+Fitur yang ada:
+1. Greeting message: "Selamat Datang, [Username]!"
+2. Waktu real-time yang auto-update setiap detik
+3. Tombol "Logout" → kembali ke /login
+4. Tombol "Lock Screen" → ke /lockscreen
+5. Check login status di OnInitializedAsync
+   - Jika belum login → redirect ke /login
+6. Timer untuk update waktu setiap detik
+7. Cleanup timer saat component di-destroy (IAsyncDisposable)
+
+Konsep IAsyncDisposable:
+- Setara dengan React useEffect cleanup: return () => clearInterval(timer)
+- Blazor: implement IAsyncDisposable + DisposeAsync()
+
+Inject Services:
+- IAuthService: untuk get username dan logout
+- NavigationManager: untuk navigate
+*@
+
+<div class="lock-screen-container">
+    <div class="auth-card" style="text-align: center;">
+        
+        @* Welcome Message *@
+        <h1 class="auth-title">Selamat Datang, @username!</h1>
+        <p class="auth-subtitle">Anda berhasil masuk ke sistem</p>
+
+        @* Time Display *@
+        <div class="time-display">
+            @currentTime.ToString("HH:mm:ss")
+        </div>
+        <div class="date-display">
+            @currentTime.ToString("dddd, dd MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("id-ID"))
+        </div>
+
+        @* Action Buttons *@
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" @onclick="HandleLock">
+                🔒 Lock Screen
+            </button>
+            @* Setara dengan React:
+               <button onClick={handleLock}>Lock Screen</button>
+            *@
+
+            <button type="button" class="btn btn-primary" @onclick="HandleLogout">
+                🚪 Logout
+            </button>
+            @* Setara dengan React:
+               <button onClick={handleLogout}>Logout</button>
+            *@
+        </div>
+    </div>
+</div>
+
+@code {
+    // ─────────────────────────────────────────────────────────────────────
+    // STATE (Setara dengan useState di React)
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Username user yang login
+    /// Setara dengan: const [username, setUsername] = useState("");
+    /// </summary>
+    private string username = "";
+
+    /// <summary>
+    /// Waktu saat ini yang di-display
+    /// Setara dengan: const [currentTime, setCurrentTime] = useState(new Date());
+    /// </summary>
+    private DateTime currentTime = DateTime.Now;
+
+    /// <summary>
+    /// Timer untuk update waktu setiap detik
+    /// Perlu disimpan agar bisa di-dispose nanti
+    /// Setara dengan React:
+    /// const timerRef = useRef(null);
+    /// return () => clearInterval(timerRef.current);
+    /// </summary>
+    private System.Threading.Timer? timer = null;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LIFECYCLE
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Lifecycle method yang di-call saat component pertama kali di-mount
+    /// 
+    /// Setara dengan: useEffect(() => { ... }, []) di React
+    /// atau: componentDidMount() di React Class Component
+    /// 
+    /// Digunakan untuk:
+    /// 1. Ambil username dari authService
+    /// 2. Cek apakah user sudah login
+    /// 3. Jika belum login, redirect ke /login
+    /// 4. Jika sudah login, tampilkan halaman welcome
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        // Ambil username dari authService
+        // Setara dengan: const user = sessionStorage.getItem('user')
+        username = authService.GetCurrentUser() ?? "";
+
+        // Cek apakah user sudah login
+        if (!authService.IsLoggedIn() || string.IsNullOrEmpty(username))
+        {
+            // Jika belum login, redirect ke /login
+            // Setara dengan: router.push('/login')
+            navigationManager.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        // Set waktu awal
+        currentTime = DateTime.Now;
+    }
+
+    /// <summary>
+    /// Lifecycle method yang di-call setelah component di-render
+    /// (setelah HTML di-render ke DOM)
+    /// 
+    /// Setara dengan: useEffect(() => { ... }, []) di React
+    /// yang di-run SETELAH render (bukan sebelum)
+    /// atau: componentDidMount() di React Class Component
+    /// 
+    /// Di sini kita setup timer untuk update waktu setiap detik
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Hanya setup timer di render pertama saja
+        if (firstRender)
+        {
+            // Setup timer yang di-call setiap 1000ms (1 detik)
+            // Setara dengan:
+            // useEffect(() => {
+            //   const interval = setInterval(() => {
+            //     setCurrentTime(new Date());
+            //   }, 1000);
+            //   return () => clearInterval(interval);
+            // }, []);
+
+            timer = new System.Threading.Timer(async _ =>
+            {
+                // Update waktu
+                currentTime = DateTime.Now;
+
+                // Trigger re-render
+                // Setara dengan React: setCurrentTime(...) yang otomatis trigger re-render
+                // Di Blazor harus manual call StateHasChanged() untuk trigger re-render
+                await InvokeAsync(StateHasChanged);
+
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // EVENT HANDLERS
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Handler untuk tombol "Lock Screen"
+    /// Navigate ke halaman /lockscreen
+    /// 
+    /// Setara dengan:
+    /// const handleLock = () => router.push('/lockscreen')
+    /// </summary>
+    private void HandleLock()
+    {
+        // Navigate ke /lockscreen
+        navigationManager.NavigateTo("/lockscreen", replace: false);
+    }
+
+    /// <summary>
+    /// Handler untuk tombol "Logout"
+    /// 
+    /// Setara dengan:
+    /// const handleLogout = async () => {
+    ///   await api.post('/api/auth/logout');
+    ///   clearSession();
+    ///   router.push('/login');
+    /// }
+    /// 
+    /// Proses:
+    /// 1. Call authService.Logout() untuk hapus session
+    /// 2. Navigate ke /login
+    /// </summary>
+    private void HandleLogout()
+    {
+        // Hapus session user
+        authService.Logout();
+
+        // Navigate ke /login
+        navigationManager.NavigateTo("/login", replace: true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // CLEANUP & DISPOSAL
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// IAsyncDisposable implementation untuk cleanup resources
+    /// 
+    /// Setara dengan React useEffect cleanup:
+    /// useEffect(() => {
+    ///   const timer = setInterval(...);
+    ///   return () => {
+    ///     clearInterval(timer);  // ← Ini yang setara dengan DisposeAsync
+    ///   };
+    /// }, []);
+    /// 
+    /// atau di Vue: onBeforeUnmount(() => clearInterval(timer))
+    /// 
+    /// Digunakan untuk:
+    /// 1. Stop timer (agar tidak terus berjalan setelah component di-destroy)
+    /// 2. Free memory resources
+    /// 3. Prevent memory leaks
+    /// </summary>
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        // Stop timer jika masih berjalan
+        if (timer is not null)
+        {
+            // Dispose timer = stop timer
+            await timer.DisposeAsync();
+        }
+    }
+}
